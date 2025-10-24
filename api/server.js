@@ -10,11 +10,12 @@ app.get("/get-video", (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: "URL não informada." });
 
-  const protocol = url.startsWith("https") ? https : http;
+  // Se o link vier com ? e &, encode automaticamente para evitar quebra na query
+  const safeUrl = encodeURI(url); 
+  const protocol = safeUrl.startsWith("https") ? https : http;
 
-  protocol.get(url, (response) => {
+  protocol.get(safeUrl, (response) => {
     let html = "";
-
     response.on("data", (chunk) => (html += chunk));
     response.on("end", () => {
       const match = html.match(/<video[^>]+src="([^"]+)"/);
@@ -24,10 +25,9 @@ app.get("/get-video", (req, res) => {
         res.status(404).json({ error: "Vídeo não encontrado no HTML." });
       }
     });
-  }).on("error", (err) => {
+  }).on("error", () => {
     res.status(500).json({ error: "Erro ao buscar a página." });
   });
 });
 
-// Remova app.listen() — na Vercel isso quebra
 export default app;
